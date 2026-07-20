@@ -23,6 +23,7 @@ interface FormState {
   progress: number
   startAt: string // datetime-local 形式（ローカル時刻）
   endAt: string
+  reminderAt: string // 空文字なら「リマインダーなし」
 }
 
 const form = reactive<FormState>({
@@ -32,7 +33,8 @@ const form = reactive<FormState>({
   priority: 'mid',
   progress: 0,
   startAt: '',
-  endAt: ''
+  endAt: '',
+  reminderAt: ''
 })
 
 const statusLabel: Record<TaskStatus, string> = { todo: '未着手', doing: '進行中', done: '完了' }
@@ -62,6 +64,7 @@ watch(
     form.progress = task.progress
     form.startAt = isoToLocalInput(task.startAt)
     form.endAt = isoToLocalInput(task.endAt)
+    form.reminderAt = task.reminderAt ? isoToLocalInput(task.reminderAt) : ''
   },
   { immediate: true }
 )
@@ -76,7 +79,8 @@ async function save(): Promise<void> {
     priority: form.priority,
     progress: Math.min(100, Math.max(0, Number(form.progress) || 0)),
     startAt: localInputToIso(form.startAt),
-    endAt: localInputToIso(form.endAt)
+    endAt: localInputToIso(form.endAt),
+    reminderAt: form.reminderAt ? localInputToIso(form.reminderAt) : null
   })
   taskVM.closeEditor()
 }
@@ -124,6 +128,21 @@ async function save(): Promise<void> {
             <input v-model="form.endAt" class="input" type="datetime-local" />
           </label>
         </div>
+
+        <label class="field">
+          <span class="field__label">リマインダー（任意）</span>
+          <div class="reminder-row">
+            <input v-model="form.reminderAt" class="input reminder-row__input" type="datetime-local" />
+            <button
+              v-if="form.reminderAt"
+              type="button"
+              class="btn btn--ghost"
+              @click="form.reminderAt = ''"
+            >
+              クリア
+            </button>
+          </div>
+        </label>
 
         <label class="field">
           <span class="field__label">メモ</span>
@@ -187,5 +206,13 @@ async function save(): Promise<void> {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 8px;
+}
+.reminder-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.reminder-row__input {
+  flex: 1;
 }
 </style>

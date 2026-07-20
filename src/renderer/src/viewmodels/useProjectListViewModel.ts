@@ -10,7 +10,7 @@ import { projectGateway } from '@renderer/gateways/projectGateway'
 export const useProjectListViewModel = defineStore('projectList', () => {
   // --- 状態 ---
   const projects = ref<Project[]>([])
-  const selectedId = ref<number | null>(null)
+  const selectedId = ref<string | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -47,14 +47,14 @@ export const useProjectListViewModel = defineStore('projectList', () => {
     selectedId.value = created.id
   }
 
-  async function rename(id: number, name: string): Promise<void> {
+  async function rename(id: string, name: string): Promise<void> {
     const trimmed = name.trim()
     if (!trimmed) return
     const updated = await projectGateway.update(id, { name: trimmed })
     replace(updated)
   }
 
-  async function remove(id: number): Promise<void> {
+  async function remove(id: string): Promise<void> {
     await projectGateway.remove(id)
     projects.value = projects.value.filter((p) => p.id !== id)
     if (selectedId.value === id) {
@@ -62,7 +62,7 @@ export const useProjectListViewModel = defineStore('projectList', () => {
     }
   }
 
-  function select(id: number): void {
+  function select(id: string): void {
     selectedId.value = id
   }
 

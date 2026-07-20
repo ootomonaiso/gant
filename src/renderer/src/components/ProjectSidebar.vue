@@ -9,6 +9,8 @@ import { useProjectListViewModel } from '@renderer/viewmodels/useProjectListView
 const projectVM = useProjectListViewModel()
 const newName = ref('')
 
+const emit = defineEmits<{ (e: 'open-settings'): void }>()
+
 async function addProject(): Promise<void> {
   await projectVM.create(newName.value)
   newName.value = ''
@@ -50,6 +52,8 @@ async function addProject(): Promise<void> {
       />
       <button class="btn btn--primary" type="submit">追加</button>
     </form>
+
+    <button class="sidebar__settings" @click="emit('open-settings')">⚙ 設定</button>
   </aside>
 </template>
 
@@ -126,5 +130,19 @@ async function addProject(): Promise<void> {
 .sidebar__add .input {
   flex: 1;
   min-width: 0;
+}
+.sidebar__settings {
+  margin-top: 10px;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: left;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.sidebar__settings:hover {
+  background: var(--surface-hover);
 }
 </style>

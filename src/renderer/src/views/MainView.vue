@@ -3,21 +3,36 @@
  * View（画面）: 全体レイアウトと ViewModel の結線のみ。
  * ロジックは持たず、ViewModel の状態を子 View に橋渡しする。
  */
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useProjectListViewModel } from '@renderer/viewmodels/useProjectListViewModel'
 import { useTaskListViewModel } from '@renderer/viewmodels/useTaskListViewModel'
+import { useSettingsViewModel } from '@renderer/viewmodels/useSettingsViewModel'
 import ProjectSidebar from '@renderer/components/ProjectSidebar.vue'
 import TaskListView from '@renderer/components/TaskListView.vue'
 import TaskEditorDialog from '@renderer/components/TaskEditorDialog.vue'
+import SettingsDialog from '@renderer/components/SettingsDialog.vue'
 import GanttChart from '@renderer/components/gantt/GanttChart.vue'
 
 type ViewKind = 'gantt' | 'list'
 
 const projectVM = useProjectListViewModel()
 const taskVM = useTaskListViewModel()
+const settingsVM = useSettingsViewModel()
 const currentView = ref<ViewKind>('gantt')
+const showSettings = ref(false)
 
-onMounted(() => projectVM.load())
+let unsubscribeNotification: (() => void) | null = null
+
+onMounted(() => {
+  projectVM.load()
+  settingsVM.load()
+  // 通知クリックで、表示中プロジェクトのタスクなら編集を開く。
+  unsubscribeNotification = window.api.onNotificationClicked((taskId) => {
+    taskVM.openEditorById(taskId)
+  })
+})
+
+onUnmounted(() => unsubscribeNotification?.())
 
 // プロジェクト選択が変わったら、そのプロジェクトのタスクを読み込む。
 watch(
@@ -31,7 +46,7 @@ watch(
 
 <template>
   <div class="app-layout">
-    <ProjectSidebar class="app-layout__sidebar" />
+    <ProjectSidebar class="app-layout__sidebar" @open-settings="showSettings = true" />
     <main class="app-layout__content">
       <template v-if="projectVM.selectedId !== null">
         <header class="content-header">
@@ -65,6 +80,7 @@ watch(
     </main>
 
     <TaskEditorDialog />
+    <SettingsDialog v-model:open="showSettings" />
   </div>
 </template>
 

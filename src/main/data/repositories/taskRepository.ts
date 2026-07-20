@@ -1,14 +1,16 @@
 /**
  * Model（永続化）: tasks テーブルへのアクセス。
  * SQL とスキーマの知識はこのクラスに閉じ込める。
+ * 削除は soft delete。参照はすべて deleted_at IS NULL で絞る。
  */
+import { randomUUID } from 'node:crypto'
 import type { Database } from 'better-sqlite3'
 import type { Task, NewTask, TaskPatch } from '@shared/domain/task'
 
 interface TaskRow {
-  id: number
-  project_id: number
-  parent_id: number | null
+  id: string
+  project_id: string
+  parent_id: string | null
   title: string
   note: string
   start_at: string
@@ -17,6 +19,7 @@ interface TaskRow {
   status: string
   priority: string
   sort_order: number
+  reminder_at: string | null
   created_at: string
   updated_at: string
 }
@@ -34,6 +37,7 @@ function toDomain(row: TaskRow): Task {
     status: row.status as Task['status'],
     priority: row.priority as Task['priority'],
     sortOrder: row.sort_order,
+    reminderAt: row.reminder_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   }
@@ -42,32 +46,44 @@ function toDomain(row: TaskRow): Task {
 export class TaskRepository {
   constructor(private readonly db: Database) {}
 
-  listByProject(projectId: number): Task[] {
+  listByProject(projectId: string): Task[] {
     const rows = this.db
-      .prepare('SELECT * FROM tasks WHERE project_id = ? ORDER BY sort_order, id')
+      .prepare(
+        'SELECT * FROM tasks WHERE project_id = ? AND deleted_at IS NULL ORDER BY sort_order, created_at'
+      )
       .all(projectId) as TaskRow[]
     return rows.map(toDomain)
   }
 
-  getById(id: number): Task | null {
-    const row = this.db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as
-      | TaskRow
-      | undefined
+  /** 全プロジェクトの生存タスク。通知エンジンが使う。 */
+  listAllActive(): Task[] {
+    const rows = this.db
+      .prepare('SELECT * FROM tasks WHERE deleted_at IS NULL')
+      .all() as TaskRow[]
+    return rows.map(toDomain)
+  }
+
+  getById(id: string): Task | null {
+    const row = this.db
+      .prepare('SELECT * FROM tasks WHERE id = ? AND deleted_at IS NULL')
+      .get(id) as TaskRow | undefined
     return row ? toDomain(row) : null
   }
 
   create(input: NewTask): Task {
     const now = new Date().toISOString()
-    const info = this.db
+    const id = randomUUID()
+    this.db
       .prepare(
         `INSERT INTO tasks
-           (project_id, parent_id, title, note, start_at, end_at,
-            progress, status, priority, sort_order, created_at, updated_at)
+           (id, project_id, parent_id, title, note, start_at, end_at,
+            progress, status, priority, sort_order, reminder_at, created_at, updated_at)
          VALUES
-           (@projectId, @parentId, @title, @note, @startAt, @endAt,
-            @progress, @status, @priority, @sortOrder, @now, @now)`
+           (@id, @projectId, @parentId, @title, @note, @startAt, @endAt,
+            @progress, @status, @priority, @sortOrder, @reminderAt, @now, @now)`
       )
       .run({
+        id,
         projectId: input.projectId,
         parentId: input.parentId ?? null,
         title: input.title,
@@ -78,12 +94,13 @@ export class TaskRepository {
         status: input.status ?? 'todo',
         priority: input.priority ?? 'mid',
         sortOrder: input.sortOrder ?? 0,
+        reminderAt: input.reminderAt ?? null,
         now
       })
-    return this.getById(Number(info.lastInsertRowid))!
+    return this.getById(id)!
   }
 
-  update(id: number, patch: TaskPatch): Task {
+  update(id: string, patch: TaskPatch): Task {
     const columns: Record<keyof TaskPatch, string> = {
       parentId: 'parent_id',
       title: 'title',
@@ -93,7 +110,8 @@ export class TaskRepository {
       progress: 'progress',
       status: 'status',
       priority: 'priority',
-      sortOrder: 'sort_order'
+      sortOrder: 'sort_order',
+      reminderAt: 'reminder_at'
     }
 
     const sets: string[] = []
@@ -101,7 +119,7 @@ export class TaskRepository {
 
     for (const key of Object.keys(columns) as (keyof TaskPatch)[]) {
       const value = patch[key]
-      if (value === undefined) continue
+      if (value === undefined) continue // undefined は「変更なし」、null は「クリア」
       const column = columns[key]
       sets.push(`${column} = @${column}`)
       params[column] = value
@@ -112,7 +130,11 @@ export class TaskRepository {
     return this.getById(id)!
   }
 
-  remove(id: number): void {
-    this.db.prepare('DELETE FROM tasks WHERE id = ?').run(id)
+  /** soft delete。 */
+  remove(id: string): void {
+    const now = new Date().toISOString()
+    this.db
+      .prepare('UPDATE tasks SET deleted_at = ?, updated_at = ? WHERE id = ?')
+      .run(now, now, id)
   }
 }

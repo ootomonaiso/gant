@@ -1,10 +1,12 @@
 /**
  * Model: プロジェクト（タスクの分類単位）のドメイン型。
  * フレームワークに依存しないプレーンな型のみを置く。
+ *
+ * id は将来の複数端末・複数人同期に備えて UUID（文字列）を採用する。
  */
 
 export interface Project {
-  id: number
+  id: string
   name: string
   /** ガント/リストでの色分けに使う HEX カラー */
   color: string
@@ -14,7 +16,7 @@ export interface Project {
   updatedAt: string
 }
 
-/** 新規作成時の入力（id や日時はサーバー側=Repository が採番） */
+/** 新規作成時の入力（id や日時は Repository が採番） */
 export interface NewProject {
   name: string
   color?: string

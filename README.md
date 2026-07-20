@@ -53,16 +53,22 @@ SQLite の単一ファイル `gant.db` を OS のユーザーデータ領域に�
 ```
 src/
 ├─ shared/     ドメイン型 + IPC 契約（main/renderer 共有・フレームワーク非依存）
-├─ main/       Electron main：SQLite / Repository / IPC ハンドラ（= Model）
+├─ main/       Electron main：SQLite / Repository / IPC ハンドラ / 通知エンジン / 設定（= Model）
 ├─ preload/    contextBridge で API を公開（= 境界）
 └─ renderer/   Vue：views/components（View）, viewmodels（ViewModel）, gateways
 ```
+
+> **開発中の注意（スキーマ変更あり）**: ID を UUID 化し `deleted_at` を追加したため、
+> 以前のバージョンで作った `gant.db` とは互換性がない。開発中に古い DB が残っている場合は
+> `%APPDATA%/gant/gant.db*` を削除してから起動する（再作成される）。
 
 ## 実装状況（フェーズ）
 
 - [x] フェーズ1: 基盤疎通 + プロジェクト/タスクの CRUD（リスト表示）
 - [x] フェーズ2: ガント v1（SVG 描画・今日ライン・ズーム 時/日/週/月・期限警告）
 - [x] フェーズ3: バーのドラッグ編集（移動・端リサイズ・スナップ）
+- [x] 追加: デスクトップ通知（開始/期限接近/期限超過/個別リマインダー）＋設定画面
+- [x] 追加: 同期に備えたデータ設計（UUID 主キー・updated_at・soft delete）
 - [ ] フェーズ4: サブタスク階層・依存関係の矢印
 - [ ] フェーズ5: カンバン・フィルタ/検索・期限警告
 - [ ] フェーズ6: エクスポート・設定・パッケージング

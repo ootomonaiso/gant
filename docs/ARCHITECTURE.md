@@ -150,3 +150,47 @@ src/
 - **ViewModel**: Gateway をモックに差し替えて単体テスト（Vitest）。副作用は Gateway に閉じているので純粋にテストしやすい。
 - **Repository**: インメモリ SQLite（`new Database(':memory:')`）でテスト。
 - **View**: 重要なものだけ `@vue/test-utils` でスモークテスト。ロジックが無いので薄くて良い。
+
+---
+
+## 8. デスクトップ通知（main → renderer の向き）
+
+通知は **main プロセス側の常駐サービス**が担う。renderer は関与しない（画面が閉じていても動くべき処理なので main に置く）。
+
+```
+NotificationService (main, src/main/notifications)
+  └ 1分ごとに TaskRepository.listAllActive() を走査
+     └ start / deadline / overdue / reminder の各イベントを判定
+        └ 未発火なら OS 通知を発火し notification_log に記録（重複防止）
+           └ 通知クリック → main が window にフォーカスし、
+              IpcChannels.notificationClicked で renderer にタスク ID を送る
+                 └ renderer（MainView）が window.api.onNotificationClicked で受け、
+                    ViewModel の openEditorById(id) を呼ぶ
+```
+
+- 発火条件・リードタイムは `settingsStore`（userData/settings.json）に従う。設定変更は通常の
+  `View → SettingsViewModel → Gateway → IPC → settingsStore` の一方向で流れる。
+- 重複発火防止キーは `種別:対象時刻(ms)`。タスクの時刻を動かすとキーが変わり再通知される。
+- **main → renderer の通知イベント**だけは例外的に「逆向き」に見えるが、これは
+  `ipcRenderer.on`（購読）であり、依存の逆流ではない。View は購読して ViewModel コマンドを呼ぶだけ。
+
+## 9. 将来の複数人・同期対応（設計の備え）
+
+現状はローカル完結だが、**データアクセスを Repository / IPC に一元化**しているため、同期化は
+「Model の実装差し替え」で吸収できる。UI・ViewModel はほぼ変更不要。
+
+備えとして先行導入済み（`docs/requirements.md` §7.1）:
+
+- **UUID 主キー**（文字列 id）: 端末をまたいでも衝突しない
+- **`updated_at` / `deleted_at`（soft delete）**: 差分同期の基準と、削除の伝播に使える
+- **Repository が唯一の SQL 実行点**: ここをリモート API クライアントに差し替えれば同期化できる
+
+将来の移行イメージ:
+
+```
+今:    ViewModel → Gateway → IPC → Repository → SQLite(ローカル)
+同期後: ViewModel → Gateway → IPC → SyncRepository → { ローカル SQLite ⇄ サーバー API }
+```
+
+次段階で足すもの（本設計の対象外）: `owner_id` によるスコープ、認証、サーバー同期エンドポイント、
+競合解決ポリシー（LWW など）。いずれも Model 層に閉じる。

@@ -1,8 +1,8 @@
 /**
  * 境界: preload。contextBridge で型付き API (`AppApi`) を renderer に公開する。
- * ここは「チャンネルへ invoke するだけ」の薄い層に保つ（ロジックを書かない）。
+ * ここは「チャンネルへ invoke する / イベントを購読する」だけの薄い層に保つ（ロジックを書かない）。
  */
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { IpcChannels } from '@shared/ipc/channels'
 import type { AppApi } from '@shared/ipc/contract'
 
@@ -18,6 +18,15 @@ const api: AppApi = {
     create: (input) => ipcRenderer.invoke(IpcChannels.taskCreate, input),
     update: (id, patch) => ipcRenderer.invoke(IpcChannels.taskUpdate, id, patch),
     remove: (id) => ipcRenderer.invoke(IpcChannels.taskRemove, id)
+  },
+  settings: {
+    get: () => ipcRenderer.invoke(IpcChannels.settingsGet),
+    update: (patch) => ipcRenderer.invoke(IpcChannels.settingsUpdate, patch)
+  },
+  onNotificationClicked: (callback) => {
+    const listener = (_e: IpcRendererEvent, taskId: string): void => callback(taskId)
+    ipcRenderer.on(IpcChannels.notificationClicked, listener)
+    return () => ipcRenderer.removeListener(IpcChannels.notificationClicked, listener)
   }
 }
 

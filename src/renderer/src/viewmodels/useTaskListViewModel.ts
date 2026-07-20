@@ -13,7 +13,7 @@ const DEFAULT_DURATION_MS = 60 * 60 * 1000
 export const useTaskListViewModel = defineStore('taskList', () => {
   // --- 状態 ---
   const tasks = ref<Task[]>([])
-  const projectId = ref<number | null>(null)
+  const projectId = ref<string | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
   /** 編集ダイアログで開いているタスク（null なら閉じている） */
@@ -21,12 +21,12 @@ export const useTaskListViewModel = defineStore('taskList', () => {
 
   // --- 派生値 ---
   const sortedTasks = computed(() =>
-    [...tasks.value].sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id)
+    [...tasks.value].sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt))
   )
   const isEmpty = computed(() => !loading.value && tasks.value.length === 0)
 
   // --- コマンド ---
-  async function load(pid: number): Promise<void> {
+  async function load(pid: string): Promise<void> {
     projectId.value = pid
     loading.value = true
     error.value = null
@@ -54,20 +54,21 @@ export const useTaskListViewModel = defineStore('taskList', () => {
       progress: 0,
       status: 'todo',
       priority: 'mid',
-      sortOrder: tasks.value.length
+      sortOrder: tasks.value.length,
+      reminderAt: null
     })
     tasks.value.push(created)
     editingTask.value = created
   }
 
-  async function update(id: number, patch: TaskPatch): Promise<void> {
+  async function update(id: string, patch: TaskPatch): Promise<void> {
     const updated = await taskGateway.update(id, patch)
     const index = tasks.value.findIndex((t) => t.id === id)
     if (index >= 0) tasks.value[index] = updated
     if (editingTask.value?.id === id) editingTask.value = updated
   }
 
-  async function remove(id: number): Promise<void> {
+  async function remove(id: string): Promise<void> {
     await taskGateway.remove(id)
     tasks.value = tasks.value.filter((t) => t.id !== id)
     if (editingTask.value?.id === id) editingTask.value = null
@@ -75,6 +76,14 @@ export const useTaskListViewModel = defineStore('taskList', () => {
 
   function openEditor(task: Task): void {
     editingTask.value = task
+  }
+
+  /** 通知クリックなどから ID 指定で編集を開く（当該プロジェクトを表示中のときのみ有効）。 */
+  function openEditorById(id: string): boolean {
+    const task = tasks.value.find((t) => t.id === id)
+    if (!task) return false
+    editingTask.value = task
+    return true
   }
 
   function closeEditor(): void {
@@ -94,6 +103,7 @@ export const useTaskListViewModel = defineStore('taskList', () => {
     update,
     remove,
     openEditor,
+    openEditorById,
     closeEditor
   }
 })

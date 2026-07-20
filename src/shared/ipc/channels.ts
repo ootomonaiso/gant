@@ -12,7 +12,13 @@ export const IpcChannels = {
   taskListByProject: 'tasks:listByProject',
   taskCreate: 'tasks:create',
   taskUpdate: 'tasks:update',
-  taskRemove: 'tasks:remove'
+  taskRemove: 'tasks:remove',
+
+  settingsGet: 'settings:get',
+  settingsUpdate: 'settings:update',
+
+  /** main → renderer: 通知クリック時にタスク ID を渡す */
+  notificationClicked: 'notification:clicked'
 } as const
 
 export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels]

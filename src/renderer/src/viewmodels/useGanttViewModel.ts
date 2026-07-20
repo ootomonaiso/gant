@@ -18,7 +18,7 @@ const BAR_PAD = 8
 type DragMode = 'move' | 'resize-start' | 'resize-end'
 
 interface DragState {
-  taskId: number
+  taskId: string
   mode: DragMode
   originClientX: number
   origStartMs: number
