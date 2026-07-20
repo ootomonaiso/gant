@@ -8,14 +8,13 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { Task } from '@shared/domain/task'
 import { useTaskListViewModel } from './useTaskListViewModel'
-import { UNIT_CONFIG, generateTicks, padMs, pxPerMs, snap, type ZoomUnit } from '@renderer/gantt/timescale'
+import { generateTicks, padMs, pxPerMs, type ZoomUnit } from '@renderer/gantt/timescale'
+import { applyDrag, type DragMode } from '@renderer/gantt/drag'
 
 const DAY = 24 * 60 * 60 * 1000
 const ROW_H = 40
 const HEADER_H = 48
 const BAR_PAD = 8
-
-type DragMode = 'move' | 'resize-start' | 'resize-end'
 
 interface DragState {
   taskId: string
@@ -121,23 +120,9 @@ export const useGanttViewModel = defineStore('gantt', () => {
     const d = drag.value
     if (!d) return
     const deltaMs = (clientX - d.originClientX) / scale.value
-    const minDur = UNIT_CONFIG[unit.value].snapMs
-
-    if (d.mode === 'move') {
-      const ns = snap(d.origStartMs + deltaMs, unit.value)
-      d.startMs = ns
-      d.endMs = ns + (d.origEndMs - d.origStartMs)
-    } else if (d.mode === 'resize-start') {
-      let ns = snap(d.origStartMs + deltaMs, unit.value)
-      if (ns > d.origEndMs - minDur) ns = d.origEndMs - minDur
-      d.startMs = ns
-      d.endMs = d.origEndMs
-    } else {
-      let ne = snap(d.origEndMs + deltaMs, unit.value)
-      if (ne < d.origStartMs + minDur) ne = d.origStartMs + minDur
-      d.startMs = d.origStartMs
-      d.endMs = ne
-    }
+    const result = applyDrag(d.mode, d.origStartMs, d.origEndMs, deltaMs, unit.value)
+    d.startMs = result.startMs
+    d.endMs = result.endMs
   }
 
   async function endDrag(): Promise<void> {

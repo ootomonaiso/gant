@@ -13,6 +13,7 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "test": "vitest run",
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
   "dependencies": {
@@ -29,6 +30,7 @@
     "electron-vite": "^3.0.0",
     "typescript": "^5.7.3",
     "vite": "^6.1.0",
+    "vitest": "^3.0.5",
     "vue-tsc": "^2.2.0"
   }
 }
