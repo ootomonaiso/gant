@@ -4,11 +4,9 @@
  * フェーズ1 の主画面。ガント（フェーズ2）もこの ViewModel を共有して追加する。
  */
 import { useTaskListViewModel } from '@renderer/viewmodels/useTaskListViewModel'
-import { useProjectListViewModel } from '@renderer/viewmodels/useProjectListViewModel'
 import type { TaskPriority, TaskStatus } from '@shared/domain/task'
 
 const taskVM = useTaskListViewModel()
-const projectVM = useProjectListViewModel()
 
 // 表示用ラベル（プレゼンテーションの都合なので View 側に置く）
 const statusLabel: Record<TaskStatus, string> = {
@@ -36,11 +34,6 @@ function formatRange(startAt: string, endAt: string): string {
 
 <template>
   <section class="task-view">
-    <header class="task-view__header">
-      <h2 class="task-view__title">{{ projectVM.selectedProject?.name }}</h2>
-      <button class="btn btn--primary" @click="taskVM.createDefault()">＋ タスク追加</button>
-    </header>
-
     <p v-if="taskVM.loading" class="task-view__hint">読み込み中…</p>
     <p v-else-if="taskVM.error" class="task-view__error">{{ taskVM.error }}</p>
     <p v-else-if="taskVM.isEmpty" class="task-view__hint">
