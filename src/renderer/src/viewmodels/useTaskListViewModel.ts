@@ -7,11 +7,15 @@ import { computed, ref } from 'vue'
 import type { Task, TaskPatch } from '@shared/domain/task'
 import { taskGateway } from '@renderer/gateways/taskGateway'
 import { buildTaskTree } from '@renderer/tree/taskTree'
+import { matchesFilter } from '@renderer/filter/taskFilter'
+import { useTaskFilterViewModel } from './useTaskFilterViewModel'
 
 /** 新規タスクの既定期間（1 時間） */
 const DEFAULT_DURATION_MS = 60 * 60 * 1000
 
 export const useTaskListViewModel = defineStore('taskList', () => {
+  const filterVM = useTaskFilterViewModel()
+
   // --- 状態 ---
   const tasks = ref<Task[]>([])
   const projectId = ref<string | null>(null)
@@ -26,8 +30,12 @@ export const useTaskListViewModel = defineStore('taskList', () => {
   const sortedTasks = computed(() =>
     [...tasks.value].sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt))
   )
-  /** 親子ツリーを表示順（深さ付き）に平坦化。折りたたみを反映。 */
-  const visibleRows = computed(() => buildTaskTree(sortedTasks.value, collapsedIds.value))
+  /** 絞り込み条件を通過したタスク（カンバンなどフラットなビューが使う）。 */
+  const filteredTasks = computed(() =>
+    sortedTasks.value.filter((t) => matchesFilter(t, filterVM.criteria))
+  )
+  /** 親子ツリーを表示順（深さ付き）に平坦化。絞り込みと折りたたみを反映。 */
+  const visibleRows = computed(() => buildTaskTree(filteredTasks.value, collapsedIds.value))
   const isEmpty = computed(() => !loading.value && tasks.value.length === 0)
 
   // --- コマンド ---
@@ -110,6 +118,7 @@ export const useTaskListViewModel = defineStore('taskList', () => {
     editingTask,
     collapsedIds,
     sortedTasks,
+    filteredTasks,
     visibleRows,
     isEmpty,
     load,

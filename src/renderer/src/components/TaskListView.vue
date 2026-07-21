@@ -6,6 +6,7 @@
 import { useTaskListViewModel } from '@renderer/viewmodels/useTaskListViewModel'
 import { useConfirmViewModel } from '@renderer/viewmodels/useConfirmViewModel'
 import { useToastViewModel } from '@renderer/viewmodels/useToastViewModel'
+import { deadlineState, type DeadlineState } from '@renderer/deadline/deadline'
 import type { Task, TaskPriority, TaskStatus } from '@shared/domain/task'
 
 const taskVM = useTaskListViewModel()
@@ -21,6 +22,14 @@ async function removeTask(task: Task): Promise<void> {
   if (!ok) return
   await taskVM.remove(task.id)
   toastVM.push('タスクを削除しました', 'info')
+}
+
+const deadlineLabel: Record<Exclude<DeadlineState, 'none'>, string> = {
+  overdue: '超過',
+  soon: '間近'
+}
+function dstate(task: Task): DeadlineState {
+  return deadlineState(task, Date.now())
 }
 
 // 表示用ラベル（プレゼンテーションの都合なので View 側に置く）
@@ -94,6 +103,13 @@ function formatRange(startAt: string, endAt: string): string {
             </button>
             <span v-else class="task-row__toggle task-row__toggle--empty" />
             <span class="task-row__name">{{ row.task.title }}</span>
+            <span
+              v-if="dstate(row.task) !== 'none'"
+              class="badge badge--dl"
+              :class="`badge--${dstate(row.task)}`"
+            >
+              {{ deadlineLabel[dstate(row.task) as 'overdue' | 'soon'] }}
+            </span>
           </td>
           <td>
             <span class="badge" :class="`badge--${row.task.status}`">
@@ -257,5 +273,16 @@ function formatRange(startAt: string, endAt: string): string {
 .badge--pri-low {
   background: var(--surface-hover);
   color: var(--text-muted);
+}
+.badge--dl {
+  margin-left: 8px;
+}
+.badge--overdue {
+  background: #fde8e8;
+  color: #c0392b;
+}
+.badge--soon {
+  background: #fff4e0;
+  color: #b8791a;
 }
 </style>

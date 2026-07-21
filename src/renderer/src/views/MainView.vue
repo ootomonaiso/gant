@@ -14,9 +14,11 @@ import TaskEditorDialog from '@renderer/components/TaskEditorDialog.vue'
 import SettingsDialog from '@renderer/components/SettingsDialog.vue'
 import ConfirmDialog from '@renderer/components/ConfirmDialog.vue'
 import ToastHost from '@renderer/components/ToastHost.vue'
+import FilterBar from '@renderer/components/FilterBar.vue'
 import GanttChart from '@renderer/components/gantt/GanttChart.vue'
+import KanbanBoard from '@renderer/components/kanban/KanbanBoard.vue'
 
-type ViewKind = 'gantt' | 'list'
+type ViewKind = 'gantt' | 'list' | 'kanban'
 
 const projectVM = useProjectListViewModel()
 const taskVM = useTaskListViewModel()
@@ -73,12 +75,22 @@ watch(
             >
               リスト
             </button>
+            <button
+              class="view-tabs__btn"
+              :class="{ 'view-tabs__btn--active': currentView === 'kanban' }"
+              @click="currentView = 'kanban'"
+            >
+              カンバン
+            </button>
           </div>
           <button class="btn btn--primary" @click="taskVM.createDefault()">＋ タスク追加</button>
         </header>
 
+        <FilterBar />
+
         <div class="content-body">
           <GanttChart v-if="currentView === 'gantt'" />
+          <KanbanBoard v-else-if="currentView === 'kanban'" />
           <TaskListView v-else />
         </div>
       </template>
