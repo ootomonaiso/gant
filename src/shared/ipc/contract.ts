@@ -6,6 +6,7 @@
  */
 import type { Project, NewProject, ProjectPatch } from '../domain/project'
 import type { Task, NewTask, TaskPatch } from '../domain/task'
+import type { Dependency, NewDependency } from '../domain/dependency'
 import type { AppSettings } from '../domain/settings'
 
 export interface ProjectApi {
@@ -22,6 +23,12 @@ export interface TaskApi {
   remove(id: string): Promise<void>
 }
 
+export interface DependencyApi {
+  listByProject(projectId: string): Promise<Dependency[]>
+  create(input: NewDependency): Promise<Dependency>
+  remove(id: string): Promise<void>
+}
+
 export interface SettingsApi {
   get(): Promise<AppSettings>
   update(patch: Partial<AppSettings>): Promise<AppSettings>
@@ -30,6 +37,7 @@ export interface SettingsApi {
 export interface AppApi {
   projects: ProjectApi
   tasks: TaskApi
+  dependencies: DependencyApi
   settings: SettingsApi
   /**
    * 通知クリックの購読。コールバックにタスク ID が渡る。

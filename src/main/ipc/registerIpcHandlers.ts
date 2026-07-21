@@ -6,16 +6,19 @@ import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc/channels'
 import type { NewProject, ProjectPatch } from '@shared/domain/project'
 import type { NewTask, TaskPatch } from '@shared/domain/task'
+import type { NewDependency } from '@shared/domain/dependency'
 import type { AppSettings } from '@shared/domain/settings'
 import { getDatabase } from '../data/database'
 import { ProjectRepository } from '../data/repositories/projectRepository'
 import { TaskRepository } from '../data/repositories/taskRepository'
+import { DependencyRepository } from '../data/repositories/dependencyRepository'
 import { getSettings, updateSettings } from '../settings/settingsStore'
 
 export function registerIpcHandlers(): void {
   const db = getDatabase()
   const projects = new ProjectRepository(db)
   const tasks = new TaskRepository(db)
+  const dependencies = new DependencyRepository(db)
 
   // --- projects ---
   ipcMain.handle(IpcChannels.projectList, () => projects.list())
@@ -34,6 +37,15 @@ export function registerIpcHandlers(): void {
     tasks.update(id, patch)
   )
   ipcMain.handle(IpcChannels.taskRemove, (_e, id: string) => tasks.remove(id))
+
+  // --- dependencies ---
+  ipcMain.handle(IpcChannels.dependencyListByProject, (_e, projectId: string) =>
+    dependencies.listByProject(projectId)
+  )
+  ipcMain.handle(IpcChannels.dependencyCreate, (_e, input: NewDependency) =>
+    dependencies.create(input)
+  )
+  ipcMain.handle(IpcChannels.dependencyRemove, (_e, id: string) => dependencies.remove(id))
 
   // --- settings ---
   ipcMain.handle(IpcChannels.settingsGet, () => getSettings())

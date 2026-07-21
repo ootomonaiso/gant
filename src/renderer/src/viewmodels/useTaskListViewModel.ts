@@ -6,6 +6,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { Task, TaskPatch } from '@shared/domain/task'
 import { taskGateway } from '@renderer/gateways/taskGateway'
+import { buildTaskTree } from '@renderer/tree/taskTree'
 
 /** 新規タスクの既定期間（1 時間） */
 const DEFAULT_DURATION_MS = 60 * 60 * 1000
@@ -18,11 +19,15 @@ export const useTaskListViewModel = defineStore('taskList', () => {
   const error = ref<string | null>(null)
   /** 編集ダイアログで開いているタスク（null なら閉じている） */
   const editingTask = ref<Task | null>(null)
+  /** 折りたたみ中のタスク ID */
+  const collapsedIds = ref<Set<string>>(new Set())
 
   // --- 派生値 ---
   const sortedTasks = computed(() =>
     [...tasks.value].sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt))
   )
+  /** 親子ツリーを表示順（深さ付き）に平坦化。折りたたみを反映。 */
+  const visibleRows = computed(() => buildTaskTree(sortedTasks.value, collapsedIds.value))
   const isEmpty = computed(() => !loading.value && tasks.value.length === 0)
 
   // --- コマンド ---
@@ -90,13 +95,22 @@ export const useTaskListViewModel = defineStore('taskList', () => {
     editingTask.value = null
   }
 
+  function toggleCollapse(id: string): void {
+    const next = new Set(collapsedIds.value)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    collapsedIds.value = next
+  }
+
   return {
     tasks,
     projectId,
     loading,
     error,
     editingTask,
+    collapsedIds,
     sortedTasks,
+    visibleRows,
     isEmpty,
     load,
     createDefault,
@@ -104,6 +118,7 @@ export const useTaskListViewModel = defineStore('taskList', () => {
     remove,
     openEditor,
     openEditorById,
-    closeEditor
+    closeEditor,
+    toggleCollapse
   }
 })

@@ -19,6 +19,12 @@ const api: AppApi = {
     update: (id, patch) => ipcRenderer.invoke(IpcChannels.taskUpdate, id, patch),
     remove: (id) => ipcRenderer.invoke(IpcChannels.taskRemove, id)
   },
+  dependencies: {
+    listByProject: (projectId) =>
+      ipcRenderer.invoke(IpcChannels.dependencyListByProject, projectId),
+    create: (input) => ipcRenderer.invoke(IpcChannels.dependencyCreate, input),
+    remove: (id) => ipcRenderer.invoke(IpcChannels.dependencyRemove, id)
+  },
   settings: {
     get: () => ipcRenderer.invoke(IpcChannels.settingsGet),
     update: (patch) => ipcRenderer.invoke(IpcChannels.settingsUpdate, patch)

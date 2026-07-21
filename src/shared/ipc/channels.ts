@@ -14,6 +14,10 @@ export const IpcChannels = {
   taskUpdate: 'tasks:update',
   taskRemove: 'tasks:remove',
 
+  dependencyListByProject: 'dependencies:listByProject',
+  dependencyCreate: 'dependencies:create',
+  dependencyRemove: 'dependencies:remove',
+
   settingsGet: 'settings:get',
   settingsUpdate: 'settings:update',
 

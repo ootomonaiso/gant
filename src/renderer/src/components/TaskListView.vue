@@ -69,43 +69,54 @@ function formatRange(startAt: string, endAt: string): string {
       </thead>
       <tbody>
         <tr
-          v-for="task in taskVM.sortedTasks"
-          :key="task.id"
+          v-for="row in taskVM.visibleRows"
+          :key="row.task.id"
           class="task-row"
-          :class="{ 'task-row--done': task.status === 'done' }"
-          @click="taskVM.openEditor(task)"
+          :class="{ 'task-row--done': row.task.status === 'done' }"
+          @click="taskVM.openEditor(row.task)"
         >
           <td class="task-table__check" @click.stop>
             <input
               type="checkbox"
-              :checked="task.status === 'done'"
+              :checked="row.task.status === 'done'"
               title="完了にする / 戻す"
-              @change="toggleDone(task)"
+              @change="toggleDone(row.task)"
             />
           </td>
-          <td class="task-row__title">{{ task.title }}</td>
+          <td class="task-row__title">
+            <span class="task-row__indent" :style="{ width: row.depth * 16 + 'px' }" />
+            <button
+              v-if="row.hasChildren"
+              class="task-row__toggle"
+              @click.stop="taskVM.toggleCollapse(row.task.id)"
+            >
+              {{ row.collapsed ? '▶' : '▼' }}
+            </button>
+            <span v-else class="task-row__toggle task-row__toggle--empty" />
+            <span class="task-row__name">{{ row.task.title }}</span>
+          </td>
           <td>
-            <span class="badge" :class="`badge--${task.status}`">
-              {{ statusLabel[task.status] }}
+            <span class="badge" :class="`badge--${row.task.status}`">
+              {{ statusLabel[row.task.status] }}
             </span>
           </td>
           <td>
-            <span class="badge" :class="`badge--pri-${task.priority}`">
-              {{ priorityLabel[task.priority] }}
+            <span class="badge" :class="`badge--pri-${row.task.priority}`">
+              {{ priorityLabel[row.task.priority] }}
             </span>
           </td>
           <td class="task-row__progress">
             <div class="progress">
-              <div class="progress__bar" :style="{ width: `${task.progress}%` }" />
+              <div class="progress__bar" :style="{ width: `${row.task.progress}%` }" />
             </div>
-            <span class="progress__label">{{ task.progress }}%</span>
+            <span class="progress__label">{{ row.task.progress }}%</span>
           </td>
-          <td class="task-row__range">{{ formatRange(task.startAt, task.endAt) }}</td>
+          <td class="task-row__range">{{ formatRange(row.task.startAt, row.task.endAt) }}</td>
           <td>
             <button
               class="btn btn--ghost"
               title="削除"
-              @click.stop="removeTask(task)"
+              @click.stop="removeTask(row.task)"
             >
               🗑
             </button>
@@ -157,9 +168,29 @@ function formatRange(startAt: string, endAt: string): string {
   width: 36px;
   text-align: center;
 }
-.task-row--done .task-row__title {
+.task-row--done .task-row__name {
   text-decoration: line-through;
   color: var(--text-muted);
+}
+.task-row__title {
+  white-space: nowrap;
+}
+.task-row__indent {
+  display: inline-block;
+  vertical-align: middle;
+}
+.task-row__toggle {
+  display: inline-block;
+  width: 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 9px;
+  padding: 0;
+}
+.task-row__toggle--empty {
+  cursor: default;
 }
 .task-row td {
   padding: 10px;

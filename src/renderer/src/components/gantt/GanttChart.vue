@@ -78,14 +78,25 @@ function isOverdue(task: Task): boolean {
       <div ref="labelsEl" class="gantt__labels">
         <div class="gantt__labels-head" :style="{ height: vm.headerHeight + 'px' }">タスク</div>
         <div
-          v-for="task in vm.tasks"
-          :key="task.id"
+          v-for="row in vm.rows"
+          :key="row.task.id"
           class="gantt__label-row"
-          :style="{ height: vm.rowHeight + 'px' }"
-          @click="taskVM.openEditor(task)"
+          :style="{ height: vm.rowHeight + 'px', paddingLeft: 8 + row.depth * 14 + 'px' }"
+          @click="taskVM.openEditor(row.task)"
         >
-          <span class="gantt__label-text" :class="{ 'gantt__label-text--done': task.status === 'done' }">
-            {{ task.title }}
+          <button
+            v-if="row.hasChildren"
+            class="gantt__toggle"
+            @click.stop="taskVM.toggleCollapse(row.task.id)"
+          >
+            {{ row.collapsed ? '▶' : '▼' }}
+          </button>
+          <span v-else class="gantt__toggle gantt__toggle--empty" />
+          <span
+            class="gantt__label-text"
+            :class="{ 'gantt__label-text--done': row.task.status === 'done' }"
+          >
+            {{ row.task.title }}
           </span>
         </div>
       </div>
@@ -139,6 +150,19 @@ function isOverdue(task: Task): boolean {
           :height="vm.bodyHeight"
           :style="{ width: vm.totalWidth + 'px', height: vm.bodyHeight + 'px' }"
         >
+          <defs>
+            <marker
+              id="gantt-arrowhead"
+              markerWidth="8"
+              markerHeight="8"
+              refX="6"
+              refY="4"
+              orient="auto"
+            >
+              <path d="M0,0 L8,4 L0,8 Z" class="arrowhead" />
+            </marker>
+          </defs>
+
           <!-- 縦グリッド -->
           <line
             v-for="t in vm.ticks.minor"
@@ -162,6 +186,15 @@ function isOverdue(task: Task): boolean {
 
           <!-- 今日ライン -->
           <line :x1="vm.todayX" :y1="0" :x2="vm.todayX" :y2="vm.bodyHeight" class="today-line" />
+
+          <!-- 依存の矢印（先行→後続） -->
+          <path
+            v-for="a in vm.arrows"
+            :key="a.id"
+            :d="`M ${a.x1} ${a.y1} H ${a.x1 + 12} V ${a.y2} H ${a.x2}`"
+            class="dep-arrow"
+            marker-end="url(#gantt-arrowhead)"
+          />
 
           <!-- バー -->
           <g
@@ -217,7 +250,7 @@ function isOverdue(task: Task): boolean {
           </g>
         </svg>
 
-        <div v-if="vm.tasks.length === 0" class="gantt__empty">
+        <div v-if="vm.rows.length === 0" class="gantt__empty">
           タスクがありません。「＋ タスク追加」から作成してください。
         </div>
       </div>
@@ -293,6 +326,22 @@ function isOverdue(task: Task): boolean {
 .gantt__label-row:hover {
   background: var(--surface-hover);
 }
+.gantt__toggle {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 9px;
+  line-height: 16px;
+}
+.gantt__toggle--empty {
+  cursor: default;
+}
 .gantt__label-text {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -352,6 +401,14 @@ function isOverdue(task: Task): boolean {
   stroke: #e5484d;
   stroke-width: 2;
   stroke-dasharray: 4 3;
+}
+.dep-arrow {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+}
+.arrowhead {
+  fill: var(--text-muted);
 }
 
 .bar__body {

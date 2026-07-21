@@ -8,6 +8,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { Task } from '@shared/domain/task'
 import { useTaskListViewModel } from './useTaskListViewModel'
+import { useDependencyViewModel } from './useDependencyViewModel'
 import { generateTicks, padMs, pxPerMs, type ZoomUnit } from '@renderer/gantt/timescale'
 import { applyDrag, type DragMode } from '@renderer/gantt/drag'
 
@@ -35,8 +36,17 @@ export interface GanttBar {
   dragging: boolean
 }
 
+export interface GanttArrow {
+  id: string
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+}
+
 export const useGanttViewModel = defineStore('gantt', () => {
   const taskVM = useTaskListViewModel()
+  const depVM = useDependencyViewModel()
 
   // --- 状態 ---
   const unit = ref<ZoomUnit>('day')
@@ -48,10 +58,13 @@ export const useGanttViewModel = defineStore('gantt', () => {
   const barHeight = ROW_H - 2 * BAR_PAD
 
   // --- 派生値 ---
-  const tasks = computed(() => taskVM.sortedTasks)
+  // 表示範囲は全タスクから（折りたたんでも時間軸の広がりは保つ）。
+  const allTasks = computed(() => taskVM.sortedTasks)
+  // 描画する行は「見えているツリー行」（折りたたみ・深さ反映）。
+  const rows = computed(() => taskVM.visibleRows)
 
   const range = computed(() => {
-    const list = tasks.value
+    const list = allTasks.value
     const now = Date.now()
     if (list.length === 0) return { startMs: now - 3 * DAY, endMs: now + 7 * DAY }
     let min = Infinity
@@ -75,12 +88,13 @@ export const useGanttViewModel = defineStore('gantt', () => {
   }
 
   const totalWidth = computed(() => Math.max(600, xForTime(range.value.endMs)))
-  const bodyHeight = computed(() => tasks.value.length * ROW_H)
+  const bodyHeight = computed(() => rows.value.length * ROW_H)
   const ticks = computed(() => generateTicks(unit.value, range.value.startMs, range.value.endMs))
   const todayX = computed(() => xForTime(Date.now()))
 
   const bars = computed<GanttBar[]>(() =>
-    tasks.value.map((task, i) => {
+    rows.value.map((row, i) => {
+      const task = row.task
       const d = drag.value?.taskId === task.id ? drag.value : null
       const startMs = d ? d.startMs : Date.parse(task.startAt)
       const endMs = d ? d.endMs : Date.parse(task.endAt)
@@ -96,6 +110,26 @@ export const useGanttViewModel = defineStore('gantt', () => {
       }
     })
   )
+
+  // 依存の矢印。両端のバーが見えているものだけ描く。
+  const arrows = computed<GanttArrow[]>(() => {
+    const barById = new Map(bars.value.map((b) => [b.task.id, b]))
+    const mid = barHeight / 2
+    const result: GanttArrow[] = []
+    for (const dep of depVM.dependencies) {
+      const from = barById.get(dep.predecessorId)
+      const to = barById.get(dep.successorId)
+      if (!from || !to) continue
+      result.push({
+        id: dep.id,
+        x1: from.x + from.width,
+        y1: from.y + mid,
+        x2: to.x,
+        y2: to.y + mid
+      })
+    }
+    return result
+  })
 
   // --- コマンド ---
   function setUnit(u: ZoomUnit): void {
@@ -144,7 +178,7 @@ export const useGanttViewModel = defineStore('gantt', () => {
     rowHeight,
     headerHeight,
     barHeight,
-    tasks,
+    rows,
     range,
     scale,
     ticks,
@@ -152,6 +186,7 @@ export const useGanttViewModel = defineStore('gantt', () => {
     totalWidth,
     bodyHeight,
     bars,
+    arrows,
     xForTime,
     timeForX,
     setUnit,

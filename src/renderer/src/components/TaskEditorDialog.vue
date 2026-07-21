@@ -4,18 +4,22 @@
  * editingTask（ViewModel の状態）が非 null のときだけ表示する。
  * 入力はローカルなフォームに複製し、保存時に ViewModel のコマンドへ渡す。
  */
-import { nextTick, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useTaskListViewModel } from '@renderer/viewmodels/useTaskListViewModel'
+import { useDependencyViewModel } from '@renderer/viewmodels/useDependencyViewModel'
 import { useToastViewModel } from '@renderer/viewmodels/useToastViewModel'
 import { useWindowKeydown } from '@renderer/composables/useWindowKeydown'
+import { descendantIds } from '@renderer/tree/taskTree'
 import {
   TASK_PRIORITIES,
   TASK_STATUSES,
+  type Task,
   type TaskPriority,
   type TaskStatus
 } from '@shared/domain/task'
 
 const taskVM = useTaskListViewModel()
+const dependencyVM = useDependencyViewModel()
 const toastVM = useToastViewModel()
 const titleInput = ref<HTMLInputElement | null>(null)
 
@@ -28,6 +32,7 @@ interface FormState {
   startAt: string // datetime-local 形式（ローカル時刻）
   endAt: string
   reminderAt: string // 空文字なら「リマインダーなし」
+  parentId: string // 空文字なら「トップレベル」
 }
 
 const form = reactive<FormState>({
@@ -38,8 +43,38 @@ const form = reactive<FormState>({
   progress: 0,
   startAt: '',
   endAt: '',
-  reminderAt: ''
+  reminderAt: '',
+  parentId: ''
 })
+
+// 親候補: 自分自身とその子孫を除く（循環防止）。
+const parentCandidates = computed<Task[]>(() => {
+  const task = taskVM.editingTask
+  if (!task) return []
+  const banned = descendantIds(taskVM.tasks, task.id)
+  banned.add(task.id)
+  return taskVM.tasks.filter((t) => !banned.has(t.id))
+})
+
+// 先行タスク候補: 自分以外のタスク。
+const predecessorCandidates = computed<Task[]>(() => {
+  const task = taskVM.editingTask
+  if (!task) return []
+  return taskVM.tasks.filter((t) => t.id !== task.id)
+})
+
+function isPredecessor(candidateId: string): boolean {
+  const task = taskVM.editingTask
+  return task ? Boolean(dependencyVM.between(candidateId, task.id)) : false
+}
+
+async function togglePredecessor(candidateId: string): Promise<void> {
+  const task = taskVM.editingTask
+  if (!task) return
+  const existing = dependencyVM.between(candidateId, task.id)
+  if (existing) await dependencyVM.remove(existing.id)
+  else await dependencyVM.add(candidateId, task.id)
+}
 
 const statusLabel: Record<TaskStatus, string> = { todo: '未着手', doing: '進行中', done: '完了' }
 const priorityLabel: Record<TaskPriority, string> = { high: '高', mid: '中', low: '低' }
@@ -69,6 +104,7 @@ watch(
     form.startAt = isoToLocalInput(task.startAt)
     form.endAt = isoToLocalInput(task.endAt)
     form.reminderAt = task.reminderAt ? isoToLocalInput(task.reminderAt) : ''
+    form.parentId = task.parentId ?? ''
     // 開いた直後にタイトルへフォーカスして全選択（すぐ入力できる）。
     nextTick(() => {
       titleInput.value?.focus()
@@ -102,7 +138,8 @@ async function save(): Promise<void> {
     progress: Math.min(100, Math.max(0, Number(form.progress) || 0)),
     startAt: startIso,
     endAt: endIso,
-    reminderAt: form.reminderAt ? localInputToIso(form.reminderAt) : null
+    reminderAt: form.reminderAt ? localInputToIso(form.reminderAt) : null,
+    parentId: form.parentId ? form.parentId : null
   })
   taskVM.closeEditor()
   toastVM.push('保存しました')
@@ -166,6 +203,31 @@ async function save(): Promise<void> {
             </button>
           </div>
         </label>
+
+        <label class="field">
+          <span class="field__label">親タスク（サブタスクにする）</span>
+          <select v-model="form.parentId" class="input">
+            <option value="">なし（トップレベル）</option>
+            <option v-for="t in parentCandidates" :key="t.id" :value="t.id">{{ t.title }}</option>
+          </select>
+        </label>
+
+        <div class="field">
+          <span class="field__label">先行タスク（このタスクの前に終わらせる）</span>
+          <div v-if="predecessorCandidates.length === 0" class="pred-empty">
+            他にタスクがありません。
+          </div>
+          <div v-else class="pred-list">
+            <label v-for="t in predecessorCandidates" :key="t.id" class="pred-item">
+              <input
+                type="checkbox"
+                :checked="isPredecessor(t.id)"
+                @change="togglePredecessor(t.id)"
+              />
+              <span>{{ t.title }}</span>
+            </label>
+          </div>
+        </div>
 
         <label class="field">
           <span class="field__label">メモ</span>
@@ -237,5 +299,26 @@ async function save(): Promise<void> {
 }
 .reminder-row__input {
   flex: 1;
+}
+.pred-list {
+  max-height: 140px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pred-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.pred-empty {
+  font-size: 13px;
+  color: var(--text-muted);
 }
 </style>

@@ -6,6 +6,7 @@
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useProjectListViewModel } from '@renderer/viewmodels/useProjectListViewModel'
 import { useTaskListViewModel } from '@renderer/viewmodels/useTaskListViewModel'
+import { useDependencyViewModel } from '@renderer/viewmodels/useDependencyViewModel'
 import { useSettingsViewModel } from '@renderer/viewmodels/useSettingsViewModel'
 import ProjectSidebar from '@renderer/components/ProjectSidebar.vue'
 import TaskListView from '@renderer/components/TaskListView.vue'
@@ -19,6 +20,7 @@ type ViewKind = 'gantt' | 'list'
 
 const projectVM = useProjectListViewModel()
 const taskVM = useTaskListViewModel()
+const dependencyVM = useDependencyViewModel()
 const settingsVM = useSettingsViewModel()
 const currentView = ref<ViewKind>('gantt')
 const showSettings = ref(false)
@@ -40,7 +42,10 @@ onUnmounted(() => unsubscribeNotification?.())
 watch(
   () => projectVM.selectedId,
   (id) => {
-    if (id !== null) taskVM.load(id)
+    if (id !== null) {
+      taskVM.load(id)
+      dependencyVM.load(id)
+    }
   },
   { immediate: true }
 )
