@@ -4,8 +4,10 @@
  * editingTask（ViewModel の状態）が非 null のときだけ表示する。
  * 入力はローカルなフォームに複製し、保存時に ViewModel のコマンドへ渡す。
  */
-import { reactive, watch } from 'vue'
+import { nextTick, reactive, ref, watch } from 'vue'
 import { useTaskListViewModel } from '@renderer/viewmodels/useTaskListViewModel'
+import { useToastViewModel } from '@renderer/viewmodels/useToastViewModel'
+import { useWindowKeydown } from '@renderer/composables/useWindowKeydown'
 import {
   TASK_PRIORITIES,
   TASK_STATUSES,
@@ -14,6 +16,8 @@ import {
 } from '@shared/domain/task'
 
 const taskVM = useTaskListViewModel()
+const toastVM = useToastViewModel()
+const titleInput = ref<HTMLInputElement | null>(null)
 
 interface FormState {
   title: string
@@ -65,24 +69,43 @@ watch(
     form.startAt = isoToLocalInput(task.startAt)
     form.endAt = isoToLocalInput(task.endAt)
     form.reminderAt = task.reminderAt ? isoToLocalInput(task.reminderAt) : ''
+    // 開いた直後にタイトルへフォーカスして全選択（すぐ入力できる）。
+    nextTick(() => {
+      titleInput.value?.focus()
+      titleInput.value?.select()
+    })
   },
   { immediate: true }
 )
 
+useWindowKeydown((e) => {
+  if (taskVM.editingTask && e.key === 'Escape') taskVM.closeEditor()
+})
+
 async function save(): Promise<void> {
   const task = taskVM.editingTask
   if (!task) return
+
+  const startIso = localInputToIso(form.startAt)
+  let endIso = localInputToIso(form.endAt)
+  // 終了が開始以前なら開始 +15 分に自動補正（バーが潰れないように）。
+  if (Date.parse(endIso) <= Date.parse(startIso)) {
+    endIso = new Date(Date.parse(startIso) + 15 * 60 * 1000).toISOString()
+    toastVM.push('終了が開始より後になるよう調整しました', 'info')
+  }
+
   await taskVM.update(task.id, {
     title: form.title.trim() || '無題',
     note: form.note,
     status: form.status,
     priority: form.priority,
     progress: Math.min(100, Math.max(0, Number(form.progress) || 0)),
-    startAt: localInputToIso(form.startAt),
-    endAt: localInputToIso(form.endAt),
+    startAt: startIso,
+    endAt: endIso,
     reminderAt: form.reminderAt ? localInputToIso(form.reminderAt) : null
   })
   taskVM.closeEditor()
+  toastVM.push('保存しました')
 }
 </script>
 
@@ -94,7 +117,7 @@ async function save(): Promise<void> {
       <form class="form" @submit.prevent="save">
         <label class="field">
           <span class="field__label">タイトル</span>
-          <input v-model="form.title" class="input" type="text" />
+          <input ref="titleInput" v-model="form.title" class="input" type="text" />
         </label>
 
         <div class="field-row">

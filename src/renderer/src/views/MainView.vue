@@ -11,6 +11,8 @@ import ProjectSidebar from '@renderer/components/ProjectSidebar.vue'
 import TaskListView from '@renderer/components/TaskListView.vue'
 import TaskEditorDialog from '@renderer/components/TaskEditorDialog.vue'
 import SettingsDialog from '@renderer/components/SettingsDialog.vue'
+import ConfirmDialog from '@renderer/components/ConfirmDialog.vue'
+import ToastHost from '@renderer/components/ToastHost.vue'
 import GanttChart from '@renderer/components/gantt/GanttChart.vue'
 
 type ViewKind = 'gantt' | 'list'
@@ -81,6 +83,8 @@ watch(
 
     <TaskEditorDialog />
     <SettingsDialog v-model:open="showSettings" />
+    <ConfirmDialog />
+    <ToastHost />
   </div>
 </template>
 

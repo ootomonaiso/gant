@@ -3,17 +3,55 @@
  * View（部品）: プロジェクト一覧・選択・追加。
  * 表示と入力の受け渡しのみ。状態と操作は ViewModel に委ねる。
  */
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
+import type { Project } from '@shared/domain/project'
 import { useProjectListViewModel } from '@renderer/viewmodels/useProjectListViewModel'
+import { useConfirmViewModel } from '@renderer/viewmodels/useConfirmViewModel'
+import { useToastViewModel } from '@renderer/viewmodels/useToastViewModel'
 
 const projectVM = useProjectListViewModel()
+const confirmVM = useConfirmViewModel()
+const toastVM = useToastViewModel()
 const newName = ref('')
 
 const emit = defineEmits<{ (e: 'open-settings'): void }>()
 
 async function addProject(): Promise<void> {
-  await projectVM.create(newName.value)
+  const name = newName.value.trim()
+  if (!name) return
+  await projectVM.create(name)
   newName.value = ''
+  toastVM.push(`「${name}」を作成しました`)
+}
+
+async function removeProject(project: Project): Promise<void> {
+  const ok = await confirmVM.ask(`プロジェクト「${project.name}」と配下のタスクを削除しますか？`)
+  if (!ok) return
+  await projectVM.remove(project.id)
+  toastVM.push('プロジェクトを削除しました', 'info')
+}
+
+// --- 名前のインライン編集（ダブルクリック） ---
+const editingId = ref<string | null>(null)
+const editingName = ref('')
+const renameInput = ref<HTMLInputElement | null>(null)
+
+function startRename(project: Project): void {
+  editingId.value = project.id
+  editingName.value = project.name
+  nextTick(() => {
+    renameInput.value?.focus()
+    renameInput.value?.select()
+  })
+}
+async function commitRename(): Promise<void> {
+  const id = editingId.value
+  if (id === null) return
+  editingId.value = null
+  await projectVM.rename(id, editingName.value)
+}
+function cancelRename(): void {
+  editingId.value = null
 }
 </script>
 
@@ -30,11 +68,28 @@ async function addProject(): Promise<void> {
         @click="projectVM.select(project.id)"
       >
         <span class="project-item__dot" :style="{ background: project.color }" />
-        <span class="project-item__name">{{ project.name }}</span>
+        <input
+          v-if="editingId === project.id"
+          ref="renameInput"
+          v-model="editingName"
+          class="project-item__edit"
+          @click.stop
+          @keyup.enter="commitRename"
+          @keyup.esc="cancelRename"
+          @blur="commitRename"
+        />
+        <span
+          v-else
+          class="project-item__name"
+          title="ダブルクリックで名前を変更"
+          @dblclick.stop="startRename(project)"
+        >
+          {{ project.name }}
+        </span>
         <button
           class="project-item__delete"
           title="削除"
-          @click.stop="projectVM.remove(project.id)"
+          @click.stop="removeProject(project)"
         >
           ×
         </button>
@@ -104,6 +159,16 @@ async function addProject(): Promise<void> {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.project-item__edit {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 2px 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
 }
 .project-item__delete {
   opacity: 0;

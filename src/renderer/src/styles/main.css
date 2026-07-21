@@ -81,3 +81,10 @@ body {
 .btn--ghost:hover {
   background: var(--surface-hover);
 }
+.btn--danger {
+  background: var(--danger);
+  color: #fff;
+}
+.btn--danger:hover {
+  filter: brightness(1.05);
+}

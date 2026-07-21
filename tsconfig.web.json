@@ -21,6 +21,8 @@
   "include": [
     "src/renderer/src/**/*.ts",
     "src/renderer/src/**/*.vue",
-    "src/shared/**/*"
+    "src/shared/**/*",
+    "src/main/notifications/notificationRules.ts",
+    "test/**/*.ts"
   ]
 }

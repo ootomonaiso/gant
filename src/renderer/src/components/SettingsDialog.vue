@@ -4,9 +4,14 @@
  * open は親から v-model で制御する。値の保存は ViewModel のコマンドに委ねる。
  */
 import { useSettingsViewModel } from '@renderer/viewmodels/useSettingsViewModel'
+import { useWindowKeydown } from '@renderer/composables/useWindowKeydown'
 
 const open = defineModel<boolean>('open', { required: true })
 const settingsVM = useSettingsViewModel()
+
+useWindowKeydown((e) => {
+  if (open.value && e.key === 'Escape') open.value = false
+})
 
 function toggleEnabled(e: Event): void {
   settingsVM.update({ notificationsEnabled: (e.target as HTMLInputElement).checked })

@@ -78,7 +78,7 @@ describe('dueEvents', () => {
   it('key は「種別:時刻」で、時刻が変わると別キーになる', () => {
     const task = makeTask()
     const now = Date.parse(task.endAt) + HOUR
-    const [overdue] = dueEvents(task, now).filter((e) => e.kind === 'overdue')
+    const [overdue] = dueEvents(task, now, 0).filter((e) => e.kind === 'overdue')
     expect(overdue.key).toBe(`overdue:${Date.parse(task.endAt)}`)
   })
 })

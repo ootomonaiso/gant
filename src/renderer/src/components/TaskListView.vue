@@ -4,9 +4,24 @@
  * フェーズ1 の主画面。ガント（フェーズ2）もこの ViewModel を共有して追加する。
  */
 import { useTaskListViewModel } from '@renderer/viewmodels/useTaskListViewModel'
-import type { TaskPriority, TaskStatus } from '@shared/domain/task'
+import { useConfirmViewModel } from '@renderer/viewmodels/useConfirmViewModel'
+import { useToastViewModel } from '@renderer/viewmodels/useToastViewModel'
+import type { Task, TaskPriority, TaskStatus } from '@shared/domain/task'
 
 const taskVM = useTaskListViewModel()
+const confirmVM = useConfirmViewModel()
+const toastVM = useToastViewModel()
+
+function toggleDone(task: Task): void {
+  taskVM.update(task.id, { status: task.status === 'done' ? 'todo' : 'done' })
+}
+
+async function removeTask(task: Task): Promise<void> {
+  const ok = await confirmVM.ask(`タスク「${task.title}」を削除しますか？`)
+  if (!ok) return
+  await taskVM.remove(task.id)
+  toastVM.push('タスクを削除しました', 'info')
+}
 
 // 表示用ラベル（プレゼンテーションの都合なので View 側に置く）
 const statusLabel: Record<TaskStatus, string> = {
@@ -43,6 +58,7 @@ function formatRange(startAt: string, endAt: string): string {
     <table v-else class="task-table">
       <thead>
         <tr>
+          <th class="task-table__check"></th>
           <th>タイトル</th>
           <th>状態</th>
           <th>優先度</th>
@@ -56,8 +72,17 @@ function formatRange(startAt: string, endAt: string): string {
           v-for="task in taskVM.sortedTasks"
           :key="task.id"
           class="task-row"
+          :class="{ 'task-row--done': task.status === 'done' }"
           @click="taskVM.openEditor(task)"
         >
+          <td class="task-table__check" @click.stop>
+            <input
+              type="checkbox"
+              :checked="task.status === 'done'"
+              title="完了にする / 戻す"
+              @change="toggleDone(task)"
+            />
+          </td>
           <td class="task-row__title">{{ task.title }}</td>
           <td>
             <span class="badge" :class="`badge--${task.status}`">
@@ -80,7 +105,7 @@ function formatRange(startAt: string, endAt: string): string {
             <button
               class="btn btn--ghost"
               title="削除"
-              @click.stop="taskVM.remove(task.id)"
+              @click.stop="removeTask(task)"
             >
               🗑
             </button>
@@ -127,6 +152,14 @@ function formatRange(startAt: string, endAt: string): string {
 }
 .task-row:hover {
   background: var(--surface-hover);
+}
+.task-table__check {
+  width: 36px;
+  text-align: center;
+}
+.task-row--done .task-row__title {
+  text-decoration: line-through;
+  color: var(--text-muted);
 }
 .task-row td {
   padding: 10px;
