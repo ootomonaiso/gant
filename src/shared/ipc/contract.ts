@@ -8,6 +8,7 @@ import type { Project, NewProject, ProjectPatch } from '../domain/project'
 import type { Task, NewTask, TaskPatch } from '../domain/task'
 import type { Dependency, NewDependency } from '../domain/dependency'
 import type { AppSettings } from '../domain/settings'
+import type { ImportResult } from '../domain/backup'
 
 export interface ProjectApi {
   list(): Promise<Project[]>
@@ -34,11 +35,19 @@ export interface SettingsApi {
   update(patch: Partial<AppSettings>): Promise<AppSettings>
 }
 
+export interface BackupApi {
+  /** JSON 保存ダイアログを開いてエクスポート。キャンセル時は canceled=true。 */
+  export(): Promise<{ canceled: boolean; path?: string }>
+  /** JSON を開いてインポート。成功時 imported、失敗時 error。 */
+  import(): Promise<{ canceled: boolean; imported?: ImportResult; error?: string }>
+}
+
 export interface AppApi {
   projects: ProjectApi
   tasks: TaskApi
   dependencies: DependencyApi
   settings: SettingsApi
+  backup: BackupApi
   /**
    * 通知クリックの購読。コールバックにタスク ID が渡る。
    * 戻り値を呼ぶと購読解除。

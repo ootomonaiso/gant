@@ -4,10 +4,12 @@
  * open は親から v-model で制御する。値の保存は ViewModel のコマンドに委ねる。
  */
 import { useSettingsViewModel } from '@renderer/viewmodels/useSettingsViewModel'
+import { useBackupViewModel } from '@renderer/viewmodels/useBackupViewModel'
 import { useWindowKeydown } from '@renderer/composables/useWindowKeydown'
 
 const open = defineModel<boolean>('open', { required: true })
 const settingsVM = useSettingsViewModel()
+const backupVM = useBackupViewModel()
 
 useWindowKeydown((e) => {
   if (open.value && e.key === 'Escape') open.value = false
@@ -49,6 +51,19 @@ function changeLead(e: Event): void {
           />
           <span class="hint">終了時刻のこの分数だけ前に「期限が近い」通知を出します。</span>
         </label>
+
+        <div class="field">
+          <span class="field__label">データ</span>
+          <div class="data-actions">
+            <button type="button" class="btn btn--ghost" :disabled="backupVM.busy" @click="backupVM.exportData()">
+              エクスポート（JSON）
+            </button>
+            <button type="button" class="btn btn--ghost" :disabled="backupVM.busy" @click="backupVM.importData()">
+              インポート（JSON）
+            </button>
+          </div>
+          <span class="hint">全プロジェクト・タスク・依存を JSON で保存/読み込みします。インポートは新規追加（既存は消えません）。</span>
+        </div>
       </div>
 
       <div class="dialog__actions">
@@ -103,6 +118,13 @@ function changeLead(e: Event): void {
 .hint {
   font-size: 12px;
   color: var(--text-muted);
+}
+.data-actions {
+  display: flex;
+  gap: 8px;
+}
+.data-actions .btn {
+  border: 1px solid var(--border);
 }
 .dialog__actions {
   display: flex;

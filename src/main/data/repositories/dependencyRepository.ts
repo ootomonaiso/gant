@@ -41,6 +41,21 @@ export class DependencyRepository {
     return rows.map(toDomain)
   }
 
+  /** 全プロジェクトの生存依存（エクスポート用）。 */
+  listAll(): Dependency[] {
+    const rows = this.db
+      .prepare(
+        `SELECT d.* FROM dependencies d
+           JOIN tasks pred ON pred.id = d.predecessor_id
+           JOIN tasks succ ON succ.id = d.successor_id
+          WHERE d.deleted_at IS NULL
+            AND pred.deleted_at IS NULL
+            AND succ.deleted_at IS NULL`
+      )
+      .all() as DependencyRow[]
+    return rows.map(toDomain)
+  }
+
   private getByPair(predecessorId: string, successorId: string): DependencyRow | undefined {
     return this.db
       .prepare('SELECT * FROM dependencies WHERE predecessor_id = ? AND successor_id = ?')

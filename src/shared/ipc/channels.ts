@@ -21,6 +21,9 @@ export const IpcChannels = {
   settingsGet: 'settings:get',
   settingsUpdate: 'settings:update',
 
+  backupExport: 'backup:export',
+  backupImport: 'backup:import',
+
   /** main → renderer: 通知クリック時にタスク ID を渡す */
   notificationClicked: 'notification:clicked'
 } as const

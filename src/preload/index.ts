@@ -29,6 +29,10 @@ const api: AppApi = {
     get: () => ipcRenderer.invoke(IpcChannels.settingsGet),
     update: (patch) => ipcRenderer.invoke(IpcChannels.settingsUpdate, patch)
   },
+  backup: {
+    export: () => ipcRenderer.invoke(IpcChannels.backupExport),
+    import: () => ipcRenderer.invoke(IpcChannels.backupImport)
+  },
   onNotificationClicked: (callback) => {
     const listener = (_e: IpcRendererEvent, taskId: string): void => callback(taskId)
     ipcRenderer.on(IpcChannels.notificationClicked, listener)

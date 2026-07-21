@@ -14,7 +14,9 @@
     "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "test": "vitest run",
-    "rebuild": "electron-rebuild -f -w better-sqlite3"
+    "rebuild": "electron-rebuild -f -w better-sqlite3",
+    "dist": "npm run build && electron-builder",
+    "dist:dir": "npm run build && electron-builder --dir"
   },
   "dependencies": {
     "better-sqlite3": "^11.8.1",
@@ -27,10 +29,32 @@
     "@types/node": "^22.13.1",
     "@vitejs/plugin-vue": "^5.2.1",
     "electron": "^34.0.2",
+    "electron-builder": "^25.1.8",
     "electron-vite": "^3.0.0",
     "typescript": "^5.7.3",
     "vite": "^6.1.0",
     "vitest": "^3.0.5",
     "vue-tsc": "^2.2.0"
+  },
+  "build": {
+    "appId": "com.example.gant",
+    "productName": "Gant",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/node_modules/better-sqlite3/**"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
