@@ -36,14 +36,30 @@ npm run build      # out/ に本番ビルドを生成
 npm run start      # ビルド済みをプレビュー起動
 ```
 
+## 配布用パッケージング
+
+```bash
+npm run dist       # release/ に Windows インストーラ（Gant Setup <ver>.exe）を生成
+npm run dist:dir   # インストーラなしの展開済みアプリ（release/win-unpacked/）だけを生成
+```
+
+- `better-sqlite3`（ネイティブ）は electron-builder が対象 Electron 用に再ビルドし、
+  asar から取り出して同梱する（`asarUnpack`）。
+- **署名はしていない**（証明書未設定なので自動スキップ）。配布時は SmartScreen 警告が出る。
+- **Windows の制約回避**: exe 編集/署名に使う electron-builder の `winCodeSign` キャッシュは
+  macOS 用シンボリックリンクを含み、Windows で Developer Mode/管理者権限がないと展開に失敗する。
+  そのため `build.win.signAndEditExecutable: false` を設定して回避している。
+  署名や exe メタデータ編集を行いたい場合（CI や Developer Mode 有効環境）は、このフラグを外す。
+
 ## データの保存場所
 
 SQLite の単一ファイル `gant.db` を OS のユーザーデータ領域に保存する（`app.getPath('userData')`）。
 
-- Windows: `%APPDATA%/gant/gant.db`
+- Windows: `%APPDATA%/gant/gant.db`（配布版は productName の `Gant`、開発版は `gant`）
 - macOS: `~/Library/Application Support/gant/gant.db`
 
-バックアップはこのファイルをコピーするだけでよい。
+バックアップはこのファイルをコピーするか、**設定ダイアログの「データ」からエクスポート（JSON）**する。
+インポートは新しい ID を採番して追加するので、既存データを壊さない。
 
 ## ディレクトリ構成 / 拡張方法
 
@@ -53,7 +69,7 @@ SQLite の単一ファイル `gant.db` を OS のユーザーデータ領域に�
 ```
 src/
 ├─ shared/     ドメイン型 + IPC 契約（main/renderer 共有・フレームワーク非依存）
-├─ main/       Electron main：SQLite / Repository / IPC ハンドラ / 通知エンジン / 設定（= Model）
+├─ main/       Electron main：SQLite / Repository / IPC / 通知エンジン / 設定 / バックアップ（= Model）
 ├─ preload/    contextBridge で API を公開（= 境界）
 └─ renderer/   Vue：views/components（View）, viewmodels（ViewModel）, gateways
 ```
@@ -71,4 +87,4 @@ src/
 - [x] 追加: 同期に備えたデータ設計（UUID 主キー・updated_at・soft delete）
 - [x] フェーズ4: サブタスク階層（折りたたみ・親子）＋依存関係の矢印
 - [x] フェーズ5: カンバンビュー・フィルタ/検索・期限のビジュアル警告（超過/間近）
-- [ ] フェーズ6: エクスポート・設定・パッケージング
+- [x] フェーズ6: エクスポート/インポート（JSON）＋ Windows インストーラのパッケージング
