@@ -2,6 +2,7 @@ node_modules/
 out/
 dist/
 release/
+e2e/shots/
 *.log
 .DS_Store
 .vite/

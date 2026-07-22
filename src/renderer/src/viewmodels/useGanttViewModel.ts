@@ -99,7 +99,8 @@ export const useGanttViewModel = defineStore('gantt', () => {
       const startMs = d ? d.startMs : Date.parse(task.startAt)
       const endMs = d ? d.endMs : Date.parse(task.endAt)
       const x = xForTime(startMs)
-      const width = Math.max(4, xForTime(endMs) - x)
+      // 短いタスクでも見えて掴めるよう最小幅を確保する。
+      const width = Math.max(8, xForTime(endMs) - x)
       return {
         task,
         x,

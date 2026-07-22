@@ -10,8 +10,8 @@ import { buildTaskTree } from '@renderer/tree/taskTree'
 import { matchesFilter } from '@renderer/filter/taskFilter'
 import { useTaskFilterViewModel } from './useTaskFilterViewModel'
 
-/** 新規タスクの既定期間（1 時間） */
-const DEFAULT_DURATION_MS = 60 * 60 * 1000
+/** 新規タスクの既定期間（1 日）。ガントで最初からバーが見える長さにする。 */
+const DEFAULT_DURATION_MS = 24 * 60 * 60 * 1000
 
 export const useTaskListViewModel = defineStore('taskList', () => {
   const filterVM = useTaskFilterViewModel()

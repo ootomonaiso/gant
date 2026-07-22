@@ -27,7 +27,13 @@ npm run rebuild   # better-sqlite3 を Electron の ABI に合わせて再ビル
 ```bash
 npm run dev        # ホットリロード付きで Electron を起動
 npm run typecheck  # 型チェック（main/preload と renderer の両方）
+npm test           # 純粋ロジックのユニットテスト（Vitest）
+npm run e2e        # 実機 e2e（Playwright でビルド済みアプリを操作、e2e/shots/ にスクショ）
 ```
+
+- `npm test` … timescale / drag / notificationRules / taskTree / taskFilter / deadline を Node 上で検証。
+- `npm run e2e` … 本物の SQLite ごと起動し、プロジェクト/タスク作成・階層・依存・カンバン D&D を操作して
+  各ビューのスクリーンショットを撮る（`e2e/shots/` は Git 管理外）。使い捨ての userData を使う。
 
 ## ビルド
 
