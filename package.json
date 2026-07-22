@@ -1,5 +1,5 @@
 {
-  "name": "gant",
+  "name": "gagagant",
   "version": "0.1.0",
   "description": "ガントチャート型タスク管理アプリ（Electron + Vue 3 + SQLite / MVVM）",
   "main": "./out/main/index.js",
@@ -40,8 +40,8 @@
     "vue-tsc": "^2.2.0"
   },
   "build": {
-    "appId": "com.example.gant",
-    "productName": "Gant",
+    "appId": "com.example.gagagant",
+    "productName": "gagagant",
     "directories": {
       "output": "release"
     },

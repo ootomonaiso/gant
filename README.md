@@ -1,4 +1,4 @@
-# Gant — ガントチャート型タスク管理アプリ
+# gagagant — ガントチャート型タスク管理アプリ
 
 ガントチャートを中心に、タスクの期間・進捗・依存関係を視覚的に管理する個人用デスクトップアプリ。
 
@@ -47,7 +47,7 @@ npm run start      # ビルド済みをプレビュー起動
 ## 配布用パッケージング
 
 ```bash
-npm run dist       # release/ に Windows インストーラ（Gant Setup <ver>.exe）を生成
+npm run dist       # release/ に Windows インストーラ（gagagant Setup <ver>.exe）を生成
 npm run dist:dir   # インストーラなしの展開済みアプリ（release/win-unpacked/）だけを生成
 ```
 
@@ -62,9 +62,10 @@ npm run dist:dir   # インストーラなしの展開済みアプリ（release/
 ## データの保存場所
 
 SQLite の単一ファイル `gant.db` を OS のユーザーデータ領域に保存する（`app.getPath('userData')`）。
+フォルダ名は productName（`gagagant`）に従う。
 
-- Windows: `%APPDATA%/gant/gant.db`（配布版は productName の `Gant`、開発版は `gant`）
-- macOS: `~/Library/Application Support/gant/gant.db`
+- Windows: `%APPDATA%/gagagant/gant.db`
+- macOS: `~/Library/Application Support/gagagant/gant.db`
 
 バックアップはこのファイルをコピーするか、**設定ダイアログの「データ」からエクスポート（JSON）**する。
 インポートは新しい ID を採番して追加するので、既存データを壊さない。
@@ -84,7 +85,7 @@ src/
 
 > **開発中の注意（スキーマ変更あり）**: ID を UUID 化し `deleted_at` を追加したため、
 > 以前のバージョンで作った `gant.db` とは互換性がない。開発中に古い DB が残っている場合は
-> `%APPDATA%/gant/gant.db*` を削除してから起動する（再作成される）。
+> `%APPDATA%/gagagant/gant.db*` を削除してから起動する（再作成される）。
 
 ## 実装状況（フェーズ）
 
