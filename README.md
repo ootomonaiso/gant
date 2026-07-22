@@ -32,8 +32,10 @@ npm run e2e        # 実機 e2e（Playwright でビルド済みアプリを操�
 ```
 
 - `npm test` … timescale / drag / notificationRules / taskTree / taskFilter / deadline を Node 上で検証。
-- `npm run e2e` … 本物の SQLite ごと起動し、プロジェクト/タスク作成・階層・依存・カンバン D&D を操作して
-  各ビューのスクリーンショットを撮る（`e2e/shots/` は Git 管理外）。使い捨ての userData を使う。
+- `npm run e2e` … 本物の SQLite ごと起動し、プロジェクト/タスク作成・階層・依存・ガントのバードラッグ・
+  カンバン D&D を操作して各ビューのスクリーンショットを撮る（`e2e/shots/` は Git 管理外）。使い捨ての userData を使う。
+- `npm run e2e:notify` … 通知エンジンのチェック間隔を短縮（`GANT_NOTIFY_INTERVAL_MS`）して起動し、
+  過去リマインダー付きタスクが発火して `notification_log` に記録されることを確認する。
 
 ## ビルド
 

@@ -13,7 +13,8 @@ import type { TaskRepository } from '../data/repositories/taskRepository'
 import { getSettings } from '../settings/settingsStore'
 import { dueEvents, messageFor } from './notificationRules'
 
-const CHECK_INTERVAL_MS = 60_000
+// 既定 60 秒。テストなどで短縮したいときは環境変数で上書きできる。
+const CHECK_INTERVAL_MS = Number(process.env.GANT_NOTIFY_INTERVAL_MS) || 60_000
 
 export class NotificationService {
   private timer: ReturnType<typeof setInterval> | null = null

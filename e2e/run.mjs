@@ -101,6 +101,19 @@ async function main() {
   check('ガントにバーが4本', barCount === 4)
   const arrowCount = await win.locator('.dep-arrow').count()
   check('依存の矢印が1本', arrowCount === 1)
+
+  // バードラッグ: 「テスト」のバーを右へ動かす → 掴めて移動し、保存が反映される
+  const testBar = win.locator('g.bar').filter({ hasText: 'テスト' }).locator('.bar__body')
+  const before = await testBar.boundingBox()
+  const cx = before.x + before.width / 2
+  const cy = before.y + before.height / 2
+  await win.mouse.move(cx, cy)
+  await win.mouse.down()
+  await win.mouse.move(cx + 100, cy, { steps: 10 })
+  await win.mouse.up()
+  await win.waitForTimeout(400)
+  const after = await testBar.boundingBox()
+  check('ガントのバーをドラッグで移動&保存', !!after && !!before && after.x > before.x + 40)
   await win.screenshot({ path: path.join(shotsDir, '2-gantt.png') })
 
   // --- カンバンビュー + ドラッグ&ドロップ ---

@@ -51,6 +51,11 @@ app.whenReady().then(() => {
   notificationService = new NotificationService(db, new TaskRepository(db), () => mainWindow)
   notificationService.start()
 
+  // テスト時（通知間隔を env で上書きしているとき）だけ、DB を検査用に露出する。
+  if (process.env.GANT_NOTIFY_INTERVAL_MS) {
+    ;(globalThis as unknown as { __gantDb?: unknown }).__gantDb = db
+  }
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
