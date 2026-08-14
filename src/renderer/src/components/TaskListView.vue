@@ -7,7 +7,8 @@ import { useTaskListViewModel } from '@renderer/viewmodels/useTaskListViewModel'
 import { useConfirmViewModel } from '@renderer/viewmodels/useConfirmViewModel'
 import { useToastViewModel } from '@renderer/viewmodels/useToastViewModel'
 import { deadlineState, type DeadlineState } from '@renderer/deadline/deadline'
-import type { Task, TaskPriority, TaskStatus } from '@shared/domain/task'
+import { STATUS_LABEL, PRIORITY_LABEL, DEADLINE_LABEL } from '@renderer/presentation/labels'
+import type { Task } from '@shared/domain/task'
 
 const taskVM = useTaskListViewModel()
 const confirmVM = useConfirmViewModel()
@@ -24,24 +25,8 @@ async function removeTask(task: Task): Promise<void> {
   toastVM.push('タスクを削除しました', 'info')
 }
 
-const deadlineLabel: Record<Exclude<DeadlineState, 'none'>, string> = {
-  overdue: '超過',
-  soon: '間近'
-}
 function dstate(task: Task): DeadlineState {
   return deadlineState(task, Date.now())
-}
-
-// 表示用ラベル（プレゼンテーションの都合なので View 側に置く）
-const statusLabel: Record<TaskStatus, string> = {
-  todo: '未着手',
-  doing: '進行中',
-  done: '完了'
-}
-const priorityLabel: Record<TaskPriority, string> = {
-  high: '高',
-  mid: '中',
-  low: '低'
 }
 
 function formatRange(startAt: string, endAt: string): string {
@@ -108,17 +93,17 @@ function formatRange(startAt: string, endAt: string): string {
               class="badge badge--dl"
               :class="`badge--${dstate(row.task)}`"
             >
-              {{ deadlineLabel[dstate(row.task) as 'overdue' | 'soon'] }}
+              {{ DEADLINE_LABEL[dstate(row.task)] }}
             </span>
           </td>
           <td>
             <span class="badge" :class="`badge--${row.task.status}`">
-              {{ statusLabel[row.task.status] }}
+              {{ STATUS_LABEL[row.task.status] }}
             </span>
           </td>
           <td>
             <span class="badge" :class="`badge--pri-${row.task.priority}`">
-              {{ priorityLabel[row.task.priority] }}
+              {{ PRIORITY_LABEL[row.task.priority] }}
             </span>
           </td>
           <td class="task-row__progress">

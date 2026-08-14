@@ -1,17 +1,10 @@
 <script setup lang="ts">
 /** View（部品）: 絞り込みバー（全ビュー共通）。状態は ViewModel が持つ。 */
 import { useTaskFilterViewModel } from '@renderer/viewmodels/useTaskFilterViewModel'
-import {
-  TASK_PRIORITIES,
-  TASK_STATUSES,
-  type TaskPriority,
-  type TaskStatus
-} from '@shared/domain/task'
+import { TASK_PRIORITIES, TASK_STATUSES } from '@shared/domain/task'
+import { STATUS_LABEL, PRIORITY_LABEL } from '@renderer/presentation/labels'
 
 const filterVM = useTaskFilterViewModel()
-
-const statusLabel: Record<TaskStatus, string> = { todo: '未着手', doing: '進行中', done: '完了' }
-const priorityLabel: Record<TaskPriority, string> = { high: '高', mid: '中', low: '低' }
 </script>
 
 <template>
@@ -31,7 +24,7 @@ const priorityLabel: Record<TaskPriority, string> = { high: '高', mid: '中', l
         :class="{ 'chip--on': filterVM.statuses.includes(s) }"
         @click="filterVM.toggleStatus(s)"
       >
-        {{ statusLabel[s] }}
+        {{ STATUS_LABEL[s] }}
       </button>
     </div>
 
@@ -43,7 +36,7 @@ const priorityLabel: Record<TaskPriority, string> = { high: '高', mid: '中', l
         :class="{ 'chip--on': filterVM.priorities.includes(p) }"
         @click="filterVM.togglePriority(p)"
       >
-        優先度{{ priorityLabel[p] }}
+        優先度{{ PRIORITY_LABEL[p] }}
       </button>
     </div>
 

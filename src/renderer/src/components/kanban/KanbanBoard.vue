@@ -5,16 +5,10 @@
  */
 import { useTaskListViewModel } from '@renderer/viewmodels/useTaskListViewModel'
 import { deadlineState, type DeadlineState } from '@renderer/deadline/deadline'
-import { TASK_STATUSES, type Task, type TaskPriority, type TaskStatus } from '@shared/domain/task'
+import { STATUS_LABEL, PRIORITY_LABEL, DEADLINE_LABEL } from '@renderer/presentation/labels'
+import { TASK_STATUSES, type Task, type TaskStatus } from '@shared/domain/task'
 
 const taskVM = useTaskListViewModel()
-
-const statusLabel: Record<TaskStatus, string> = { todo: '未着手', doing: '進行中', done: '完了' }
-const priorityLabel: Record<TaskPriority, string> = { high: '高', mid: '中', low: '低' }
-const deadlineLabel: Record<Exclude<DeadlineState, 'none'>, string> = {
-  overdue: '超過',
-  soon: '間近'
-}
 
 function tasksIn(status: TaskStatus): Task[] {
   return taskVM.filteredTasks.filter((t) => t.status === status)
@@ -44,7 +38,7 @@ function onDrop(status: TaskStatus, e: DragEvent): void {
       @drop="onDrop(status, $event)"
     >
       <header class="kanban__col-head">
-        <span>{{ statusLabel[status] }}</span>
+        <span>{{ STATUS_LABEL[status] }}</span>
         <span class="kanban__count">{{ tasksIn(status).length }}</span>
       </header>
 
@@ -60,10 +54,10 @@ function onDrop(status: TaskStatus, e: DragEvent): void {
           <div class="card__title">{{ task.title }}</div>
           <div class="card__meta">
             <span class="badge" :class="`badge--pri-${task.priority}`">
-              {{ priorityLabel[task.priority] }}
+              {{ PRIORITY_LABEL[task.priority] }}
             </span>
             <span v-if="dstate(task) !== 'none'" class="badge" :class="`badge--${dstate(task)}`">
-              {{ deadlineLabel[dstate(task) as 'overdue' | 'soon'] }}
+              {{ DEADLINE_LABEL[dstate(task)] }}
             </span>
             <span class="card__progress">{{ task.progress }}%</span>
           </div>

@@ -10,6 +10,7 @@ import { useDependencyViewModel } from '@renderer/viewmodels/useDependencyViewMo
 import { useToastViewModel } from '@renderer/viewmodels/useToastViewModel'
 import { useWindowKeydown } from '@renderer/composables/useWindowKeydown'
 import { descendantIds } from '@renderer/tree/taskTree'
+import { STATUS_LABEL, PRIORITY_LABEL } from '@renderer/presentation/labels'
 import {
   TASK_PRIORITIES,
   TASK_STATUSES,
@@ -75,9 +76,6 @@ async function togglePredecessor(candidateId: string): Promise<void> {
   if (existing) await dependencyVM.remove(existing.id)
   else await dependencyVM.add(candidateId, task.id)
 }
-
-const statusLabel: Record<TaskStatus, string> = { todo: '未着手', doing: '進行中', done: '完了' }
-const priorityLabel: Record<TaskPriority, string> = { high: '高', mid: '中', low: '低' }
 
 // ISO 8601 ↔ datetime-local(ローカル時刻) の変換
 function isoToLocalInput(iso: string): string {
@@ -161,14 +159,14 @@ async function save(): Promise<void> {
           <label class="field">
             <span class="field__label">状態</span>
             <select v-model="form.status" class="input">
-              <option v-for="s in TASK_STATUSES" :key="s" :value="s">{{ statusLabel[s] }}</option>
+              <option v-for="s in TASK_STATUSES" :key="s" :value="s">{{ STATUS_LABEL[s] }}</option>
             </select>
           </label>
           <label class="field">
             <span class="field__label">優先度</span>
             <select v-model="form.priority" class="input">
               <option v-for="p in TASK_PRIORITIES" :key="p" :value="p">
-                {{ priorityLabel[p] }}
+                {{ PRIORITY_LABEL[p] }}
               </option>
             </select>
           </label>
